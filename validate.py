@@ -234,19 +234,44 @@ def validate_card(path: Path, expected_status: str, report: Report) -> None:
             CardWarning(path, "no `behavioral_impact_last_seen` date — was this belief ever used? Consider retiring.")
         )
 
-    # Encounter threshold warning
+    # Encounter threshold warning + adversarial review gate
     try:
         threshold = int(fm.get("retest_after_n_encounters", "3") or "3")
         count = int(fm.get("encounter_count", "0") or "0")
+        adv_status = fm.get("adversarial_status", "")
         if status in ("tested_once", "validated") and count >= threshold:
-            report.warnings.append(
-                CardWarning(
-                    path,
-                    f"encounter_count ({count}) >= retest threshold ({threshold}) — review and re-evaluate"
+            if status == "tested_once" and not adv_status:
+                report.warnings.append(
+                    CardWarning(
+                        path,
+                        f"encounter_count ({count}) >= threshold ({threshold}) but no adversarial review — "
+                        f"run adversarial-review.py --prep {fm.get('id', '?')} before promoting"
+                    )
                 )
-            )
+            elif adv_status == "challenged":
+                report.warnings.append(
+                    CardWarning(
+                        path,
+                        f"adversarial review found challenges (reviewed {fm.get('adversarial_review_date', '?')}) — "
+                        f"address challenges before promoting to validated"
+                    )
+                )
+            else:
+                report.warnings.append(
+                    CardWarning(
+                        path,
+                        f"encounter_count ({count}) >= retest threshold ({threshold}) — review and re-evaluate"
+                    )
+                )
     except ValueError:
         pass
+
+    # adversarial_status must be valid if present
+    adv_status = fm.get("adversarial_status", "")
+    if adv_status and adv_status not in ("clean", "challenged"):
+        report.errors.append(
+            CardError(path, f"`adversarial_status` must be 'clean' or 'challenged', got {adv_status!r}")
+        )
 
     # Structured falsification predicate (optional, machine-readable)
     predicate_raw = fm.get("falsify_predicate", "")
