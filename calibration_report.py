@@ -26,6 +26,7 @@ from pathlib import Path
 CARDS_ROOT = Path.home() / ".evidence-gate" / "cards"
 PREDICTIONS_LOG = CARDS_ROOT.parent / "predictions.jsonl"
 CALIBRATION_LOG = CARDS_ROOT.parent / "calibration-history.jsonl"
+ACTION_LOG = CARDS_ROOT.parent / "action-outcomes.jsonl"
 
 OUTCOME_STAGES = ("validated", "falsified")
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
@@ -247,6 +248,33 @@ def print_report(predictions: list[Prediction], cards_root: Path, brief: bool = 
     if total < 5:
         print(f"Note: Only {total} cards with outcome data. Calibration statistics are unreliable until n≥10.")
         print("      Keep logging predictions with confidence_before on all candidate cards.")
+
+    # Belief-in-practice accuracy (complements card-level calibration)
+    if not brief and ACTION_LOG.exists():
+        resolved = []
+        with open(ACTION_LOG, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    import json as _json
+                    a = _json.loads(line)
+                except ValueError:
+                    continue
+                if not a.get("outcome_pending") and a.get("result"):
+                    resolved.append(a)
+        if resolved:
+            good = sum(1 for a in resolved if a["result"] == "good")
+            bad  = sum(1 for a in resolved if a["result"] == "bad")
+            acc  = good / len(resolved) if resolved else 0
+            n_cards = len(set(a["card_id"] for a in resolved))
+            print()
+            print(f"Belief-in-practice: {good}/{len(resolved)} good outcomes ({acc:.0%}) across {n_cards} cards")
+            if bad > 0:
+                bad_cards = list(set(a["card_id"] for a in resolved if a["result"] == "bad"))
+                print(f"  Cards with bad outcomes: {', '.join(bad_cards)}")
+                print("  → Re-run adversarial-review.py --prep on these cards")
 
 
 def report_to_json(predictions: list[Prediction], cards_root: Path) -> dict:
