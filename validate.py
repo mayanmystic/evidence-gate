@@ -28,6 +28,16 @@ from pathlib import Path
 
 DEFAULT_CARDS_ROOT = Path.home() / ".evidence-gate" / "cards"
 
+# Valid signal types for structured falsification predicates
+VALID_PREDICATE_SIGNALS = {
+    "conversation_outcome",  # something observed in a conversation or session
+    "user_action",           # a user did or didn't do something
+    "metric",                # a quantitative threshold crossed
+    "pattern",               # a pattern observed N times
+    "event",                 # a specific discrete event occurred
+}
+VALID_STRENGTH_LEVELS = {"weak", "medium", "strong"}
+
 VALID_STATUSES = {"candidate", "tested_once", "validated", "falsified", "retired"}
 VALID_EVIDENCE_LEVELS = {"idea", "inference", "tested_once", "replicated", "validated", "falsified", "retired"}
 
@@ -238,20 +248,72 @@ def validate_card(path: Path, expected_status: str, report: Report) -> None:
     except ValueError:
         pass
 
-    # Falsification condition check (warn if missing on candidate cards)
+    # Structured falsification predicate (optional, machine-readable)
+    predicate_raw = fm.get("falsify_predicate", "")
+    if predicate_raw:
+        try:
+            import json as _json
+            predicate = _json.loads(predicate_raw)
+            if not isinstance(predicate, dict):
+                report.errors.append(CardError(path, "`falsify_predicate` must be a JSON object"))
+            else:
+                # Required fields
+                for req_field in ("description", "falsifying_value", "count"):
+                    if req_field not in predicate:
+                        report.errors.append(
+                            CardError(path, f"`falsify_predicate` missing required field: {req_field!r}")
+                        )
+                # Signal type
+                signal = predicate.get("signal", "")
+                if signal and signal not in VALID_PREDICATE_SIGNALS:
+                    report.warnings.append(
+                        CardWarning(
+                            path,
+                            f"`falsify_predicate.signal` is {signal!r}, not in {sorted(VALID_PREDICATE_SIGNALS)}"
+                        )
+                    )
+                # Count must be positive int
+                count = predicate.get("count")
+                if count is not None and (not isinstance(count, int) or count < 1):
+                    report.errors.append(
+                        CardError(path, f"`falsify_predicate.count` must be a positive integer, got {count!r}")
+                    )
+                # window_days must be non-negative
+                window = predicate.get("window_days")
+                if window is not None and (not isinstance(window, int) or window < 0):
+                    report.errors.append(
+                        CardError(path, f"`falsify_predicate.window_days` must be a non-negative integer, got {window!r}")
+                    )
+                # min_strength if present
+                min_strength = predicate.get("min_strength", "")
+                if min_strength and min_strength not in VALID_STRENGTH_LEVELS:
+                    report.errors.append(
+                        CardError(path, f"`falsify_predicate.min_strength` must be one of {sorted(VALID_STRENGTH_LEVELS)}, got {min_strength!r}")
+                    )
+        except (ValueError, TypeError) as e:
+            report.errors.append(CardError(path, f"`falsify_predicate` is not valid JSON: {e}"))
+
+    # Prose falsification condition check (warn if missing on candidate cards)
     if status == "candidate":
+        has_structured = bool(predicate_raw)
         body_lower = body.lower()
-        has_falsification = (
+        has_prose = (
             "falsif" in body_lower
-            or "falsification condition" in body_lower
             or "# proxy encounters" in body_lower
             or "explicit falsification" in body_lower
         )
-        if not has_falsification:
+        if not has_structured and not has_prose:
             report.warnings.append(
                 CardWarning(
                     path,
                     "candidate card has no falsification condition — add one before relying on this belief"
+                )
+            )
+        elif has_prose and not has_structured:
+            report.warnings.append(
+                CardWarning(
+                    path,
+                    "has prose falsification condition but no structured `falsify_predicate` — add one for automated detection"
                 )
             )
 
