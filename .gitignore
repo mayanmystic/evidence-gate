@@ -1,0 +1,19 @@
+# Don't commit actual card contents — those are private
+cards/
+*.local.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
