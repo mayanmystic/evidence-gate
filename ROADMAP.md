@@ -1,8 +1,21 @@
 # Roadmap
 
-The current version of Evidence Gate is intentionally minimal: a schema, a validator, and a lifecycle doctrine. No infrastructure required. No dependencies.
+**Status: v1.0 complete.** All six layers of the ideal evidence gate are now built.
 
-The gap between "minimal" and "ideal" is worth naming clearly.
+The gap between "minimal" and "ideal" that was identified at launch is now closed:
+
+| Layer | Script | Status |
+|---|---|---|
+| Schema + validation | `validate.py` | ✅ v0.1 |
+| Lifecycle doctrine | `README.md`, `docs/` | ✅ v0.1 |
+| Encounter detector (daily) | `encounter_detector.py` | ✅ v0.2 |
+| Structured falsification predicates | `validate.py` + `encounter_detector.py` | ✅ v0.3 |
+| System-level calibration tracker | `calibration_report.py` | ✅ v1.0 |
+| Adversarial pre-promotion pass | `adversarial_review.py` | ✅ v1.0 |
+| Action-outcome feedback loop | `action_outcome_log.py` | ✅ v1.0 |
+
+---
+
 
 ---
 
