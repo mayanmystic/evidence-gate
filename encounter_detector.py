@@ -19,7 +19,7 @@ Two modes:
   --summary   Print encounter_count + days_since_last_encounter for all cards.
               Useful for triage.
 
-No external dependencies. Reads ~/.brayden/cards/ by default.
+No external dependencies. Reads ~/.evidence-gate/cards/ by default.
 
 Usage:
     python3 encounter-detector.py --show [--memory-dir PATH] [--cards-root PATH]
@@ -156,7 +156,7 @@ For each card listed above:
    - Do NOT count situations where the card's topic came up but no outcome was observable.
    - DO count: observed behavior, user actions, decisions made, outcomes seen.
 4. For each match found, call:
-   python3 /home/openclaw/.openclaw/workspace/scripts/encounter-detector.py \\
+   python3 encounter_detector.py \\
      --record CARD-ID \\
      --strength weak|medium|strong \\
      --evidence "brief quoted evidence snippet (1-2 sentences)"
@@ -170,7 +170,7 @@ For each card listed above:
 7. After all records are written, run:
    python3 validate.py
 8. Then run:
-   python3 /home/openclaw/.openclaw/workspace/scripts/encounter-detector.py --summary
+   python3 encounter_detector.py --summary
    
    Report any cards that have hit their retest threshold (encounter_count >= retest_after_n_encounters).
    These should be flagged to Brayden for promotion, falsification, or scope update.

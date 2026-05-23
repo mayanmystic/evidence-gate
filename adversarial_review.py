@@ -26,13 +26,13 @@ Usage:
     # Step 2: agent reads output, reasons, then records result
     python3 adversarial-review.py --record CARD-20260101-001-slug \\
       --status clean \\
-      --reviewer "corvus-sonnet"
+      --reviewer "primary-agent"
 
     # Or if challenges found:
     python3 adversarial-review.py --record CARD-20260101-001-slug \\
       --status challenged \\
       --challenges "The confirming encounters all come from the same context (Brayden's own workflow). No external validation. The claim may not generalize beyond this single-user scenario." \\
-      --reviewer "corvus-sonnet"
+      --reviewer "primary-agent"
 
     # List cards needing review
     python3 adversarial-review.py --pending
@@ -190,14 +190,14 @@ If CLEAN:
   python3 adversarial_review.py \\
     --record {card_id} \\
     --status clean \\
-    --reviewer "corvus-sonnet"
+    --reviewer "primary-agent"
 
 If CHALLENGED:
   python3 adversarial_review.py \\
     --record {card_id} \\
     --status challenged \\
     --challenges "YOUR SPECIFIC CHALLENGES HERE" \\
-    --reviewer "corvus-sonnet"
+    --reviewer "primary-agent"
 
 After recording, the card will be updated with the adversarial_status field.
 A CLEAN review allows promotion. A CHALLENGED review blocks promotion until
@@ -374,7 +374,7 @@ def main() -> int:
     parser.add_argument("--record", metavar="CARD-ID")
     parser.add_argument("--status", choices=["clean", "challenged"])
     parser.add_argument("--challenges", default="")
-    parser.add_argument("--reviewer", default="corvus-sonnet")
+    parser.add_argument("--reviewer", default="primary-agent")
     parser.add_argument("--pending", action="store_true")
     args = parser.parse_args()
 
